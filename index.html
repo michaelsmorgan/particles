@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Particle system</title>
+	</head>
+	<body>
+		<canvas id="canvas"></canvas>
+		<script src="https://code.jquery.com/jquery-1.12.4.min.js" type="text/javascript"></script>
+		<script type="text/javascript">
+			window.onload = function() {
+				var canvas = document.getElementById('canvas');
+				canvas.width = window.innerWidth;
+				canvas.height = window.innerHeight;
+				
+				window.addEventListener('resize', function() {
+					width = canvas.width = window.innerWidth;
+					height = canvas.height = window.innerHeight;
+				});
+
+				canvas.addEventListener('mousemove', function(e) {
+					mouseX = e.clientX;
+					mouseY = e.clientY;
+				});
+				
+				
+				var ps = this;
+				var startTime;
+				var numParticles = 80;
+				var bleed = 100;
+				var time = 0;
+				var mouseX = 0;
+				var mouseY = 0;
+				var lineDistance = 200;
+				var lineOpacity = 1;
+
+				
+				var ctx = canvas.getContext("2d");
+				var width = canvas.offsetWidth;
+				var height = canvas.offsetHeight;
+
+				
+
+				particles = [];
+				for (var i = 0; i < numParticles; i++) {
+					//var p = new ps.fn.particles.create();
+					particles.push({
+						position: {
+							x: width * Math.random(),
+							y: height * Math.random()
+						},
+						velocity: {
+							current: 0,
+							max: 1 * Math.random() + 1
+						},
+						acceleration: 0.04,
+						alpha: 1,
+						angle: 360 * Math.random(),
+						radius: 3,
+						color: "#000000"
+					});
+				}
+
+				function render() {
+					for (var i = 0; i < numParticles; i++) {
+						var p1 = particles[i];
+						ctx.save();
+						ctx.fillStyle = p1.color;
+						ctx.globalAlpha = p1.alpha;
+						ctx.beginPath();
+						ctx.arc(p1.position.x, p1.position.y, p1.radius, 0, Math.PI * 2);
+						ctx.fill();
+						ctx.restore();
+						
+						for (var j = 0; j < numParticles; j++) {
+							if (p1 !== particles[j]) {
+								p2 = particles[j];
+								var dx = p1.position.x - p2.position.x;
+								var dy = p1.position.y - p2.position.y;
+								var dist = Math.sqrt(dx * dx + dy * dy);
+
+								// draw a line between p1 and p2 if the distance between them is under the config distance
+								if (dist <= lineDistance) {
+									var opacity_line = lineOpacity - (dist / (1 / lineOpacity)) / lineDistance;
+									var width_line = p1.radius - (dist / (1 / p1.radius)) / lineDistance;
+									if (width_line < 0) {
+										width_line = 0;
+									}
+									if (opacity_line > 0) {
+										// style
+										ctx.strokeStyle = 'rgba(0,0,0,' + opacity_line + ')';
+										ctx.lineWidth = width_line;
+										// path
+										ctx.beginPath();
+										ctx.moveTo(p1.position.x, p1.position.y);
+										ctx.lineTo(p2.position.x, p2.position.y);
+										ctx.stroke();
+										ctx.closePath();
+									}
+								}
+							}
+						}
+						var dx = p1.position.x - mouseX,
+							dy = p1.position.y - mouseY,
+							dist = Math.sqrt(dx * dx + dy * dy);
+						// draw a line between p1 and p2 if the distance between them is under the config distance
+						if (dist <= lineDistance) {
+							var opacity_line = lineOpacity - (dist / (1 / lineOpacity)) / lineDistance;
+							var width_line = p1.radius - (dist / (1 / p1.radius)) / lineDistance;
+							if (width_line < 0) {
+								width_line = 0;
+							}
+							if (opacity_line > 0) {
+								// style
+								ctx.strokeStyle = 'rgba(0,0,0,' + opacity_line + ')';
+								ctx.lineWidth = width_line;
+								// path
+								ctx.beginPath();
+								ctx.moveTo(p1.position.x, p1.position.y);
+								ctx.lineTo(mouseX, mouseY);
+								ctx.stroke();
+								ctx.closePath();
+							}
+						}
+						
+					}
+				}
+
+				function updatePositions(args) {
+					for (var i = 0; i < numParticles; i++) {
+						var p = particles[i];
+						
+						p.position.x += p.velocity.current * Math.cos(p.angle * Math.PI / 180);
+						p.position.y += p.velocity.current * Math.sin(p.angle * Math.PI / 180);
+						if(p.velocity.current < p.velocity.max){
+							p.velocity.current += p.acceleration;
+						}
+						
+						// reset position if off screen.
+						if (p.position.x > width + (p.radius * 2) + bleed) {
+							p.position.x = -(p.radius * 2) - bleed;
+						} else if (p.position.x < -(p.radius * 2) - bleed) {
+							p.position.x = width + (p.radius * 2) + bleed;
+						}
+						if (p.position.y > height + (p.radius * 2) + bleed) {
+							p.position.y = -(p.radius * 2) - bleed;
+						} else if (p.position.y < -(p.radius * 2) - bleed) {
+							p.position.y = height + (p.radius * 2) + bleed;
+						}
+					}
+				}
+
+				function loop() {
+					time = Date.now() - startTime;
+					updatePositions();
+					ctx.clearRect(0, 0, width, height);
+					render();
+					requestAnimationFrame(loop);
+				}
+
+				startTime = Date.now();
+				loop();
+			}
+		</script>
+	</body>
+</html>
